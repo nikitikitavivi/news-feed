@@ -1,10 +1,17 @@
+import { sql } from 'drizzle-orm';
 import { db } from './client.js';
 
 export async function ensureSchema(): Promise<void> {
-  await db.execute(`
+  await db.execute(sql`
     DO $$
+    DECLARE
+      stale_type boolean;
     BEGIN
-      IF NOT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'articles') THEN
+      IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'articles')
+         AND NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'articles') THEN
+        DROP TYPE articles CASCADE;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'articles') THEN
         CREATE TABLE articles (
           id SERIAL PRIMARY KEY,
           url TEXT NOT NULL UNIQUE,
@@ -16,14 +23,12 @@ export async function ensureSchema(): Promise<void> {
           created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         );
       END IF;
-    END;
-    $$;
-  `);
 
-  await db.execute(`
-    DO $$
-    BEGIN
-      IF NOT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'analyses') THEN
+      IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'analyses')
+         AND NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'analyses') THEN
+        DROP TYPE analyses CASCADE;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'analyses') THEN
         CREATE TABLE analyses (
           id SERIAL PRIMARY KEY,
           article_id INTEGER NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
@@ -34,11 +39,13 @@ export async function ensureSchema(): Promise<void> {
           created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         );
       END IF;
+
+      IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'idx_analyses_article_id') THEN
+        CREATE UNIQUE INDEX idx_analyses_article_id ON analyses(article_id);
+      END IF;
     END;
     $$;
   `);
-
-  await db.execute(`CREATE UNIQUE INDEX IF NOT EXISTS idx_analyses_article_id ON analyses(article_id)`);
 
   console.log('[db] Schema ensured.');
 }
