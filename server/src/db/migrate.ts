@@ -1,4 +1,4 @@
-import { db } from './client';
+import { db } from './client.js';
 
 export async function ensureSchema(): Promise<void> {
   await db.execute(/* sql */`

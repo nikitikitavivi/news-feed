@@ -1,16 +1,16 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import type { AnalysisRow } from '../store';
+import type { AnalysisRow } from '../store.js';
 import {
   upsertArticle,
   getAnalysisByArticleId,
   createAnalysis,
   getAnalyses,
   getAnalysisById,
-} from '../store';
-import { analyzeArticle } from '../services/openai';
-import { errorResponse, asyncHandler } from '../lib/errors';
-import { RequestCoalescer } from '../lib/coalesce';
+} from '../store.js';
+import { analyzeArticle } from '../services/openai.js';
+import { errorResponse, asyncHandler } from '../lib/errors.js';
+import { RequestCoalescer } from '../lib/coalesce.js';
 
 const router = Router();
 

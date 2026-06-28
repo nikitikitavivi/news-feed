@@ -1,6 +1,6 @@
 import { eq, and, or, desc, count, ilike } from 'drizzle-orm';
-import { db } from './db/client';
-import { articles, analyses } from './db/schema';
+import { db } from './db/client.js';
+import { articles, analyses } from './db/schema.js';
 
 export interface ArticleRow {
   id: number;

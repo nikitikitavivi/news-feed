@@ -2,11 +2,11 @@ import { fileURLToPath } from 'url';
 import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
-import { env } from './config';
-import { errorHandler } from './lib/errors';
-import { ensureSchema } from './db/migrate';
-import searchRouter from './routes/search';
-import analysesRouter from './routes/analyses';
+import { env } from './config.js';
+import { errorHandler } from './lib/errors.js';
+import { ensureSchema } from './db/migrate.js';
+import searchRouter from './routes/search.js';
+import analysesRouter from './routes/analyses.js';
 
 const app = express();
 

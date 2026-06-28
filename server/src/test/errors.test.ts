@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { Request, Response } from 'express';
-import { AppError, errorResponse, asyncHandler, errorHandler } from '../lib/errors';
+import { AppError, errorResponse, asyncHandler, errorHandler } from '../lib/errors.js';
 
 function mockReq() {
   return {} as Request;

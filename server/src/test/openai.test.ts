@@ -15,7 +15,7 @@ vi.mock('openai', () => ({
   })),
 }));
 
-import { analyzeArticle } from '../services/openai';
+import { analyzeArticle } from '../services/openai.js';
 
 beforeEach(() => {
   vi.clearAllMocks();

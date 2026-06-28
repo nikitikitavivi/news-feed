@@ -53,7 +53,7 @@ vi.mock('../store', () => {
   };
 });
 
-import { upsertArticle, getAnalysisByArticleId, createAnalysis, getAnalyses, getAnalysisById } from '../store';
+import { upsertArticle, getAnalysisByArticleId, createAnalysis, getAnalyses, getAnalysisById } from '../store.js';
 
 describe('GET /api/health', () => {
   it('returns ok', async () => {

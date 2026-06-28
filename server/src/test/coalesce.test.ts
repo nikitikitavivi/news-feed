@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { RequestCoalescer } from '../lib/coalesce';
+import { RequestCoalescer } from '../lib/coalesce.js';
 
 describe('RequestCoalescer', () => {
   it('runs the factory and returns its result', async () => {

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getTopHeadlines, searchNews, GNewsError } from '../services/gnews';
-import type { GNewsArticle } from '../services/gnews';
+import { getTopHeadlines, searchNews, GNewsError } from '../services/gnews.js';
+import type { GNewsArticle } from '../services/gnews.js';
 
 vi.mock('../config', () => ({
   env: { GNEWS_KEY: 'test-gnews-key' },

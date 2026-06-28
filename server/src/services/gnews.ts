@@ -1,4 +1,4 @@
-import { env } from '../config';
+import { env } from '../config.js';
 import { z } from 'zod';
 
 const gnewsArticleSchema = z.object({

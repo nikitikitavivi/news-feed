@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { searchNews, getTopHeadlines } from '../services/gnews';
-import { asyncHandler } from '../lib/errors';
+import { searchNews, getTopHeadlines } from '../services/gnews.js';
+import { asyncHandler } from '../lib/errors.js';
 
 const router = Router();
 

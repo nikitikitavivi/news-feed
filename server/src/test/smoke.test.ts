@@ -49,8 +49,8 @@ vi.mock('../services/openai', () => ({
 
 vi.mock('../store', () => mockStore);
 
-import { app } from '../index';
-import { GNewsError } from '../services/gnews';
+import { app } from '../index.js';
+import { GNewsError } from '../services/gnews.js';
 
 beforeEach(() => {
   vi.clearAllMocks();
