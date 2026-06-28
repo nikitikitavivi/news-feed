@@ -1,0 +1,47 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-newsfeed}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-newsfeed}
+      POSTGRES_DB: ${POSTGRES_DB:-newsfeed}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-newsfeed}"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+
+  server:
+    build: ./server
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./server/src:/app/src
+    env_file:
+      - ./server/.env
+    environment:
+      DATABASE_URL: "postgres://${POSTGRES_USER:-newsfeed}:${POSTGRES_PASSWORD:-newsfeed}@postgres:5432/${POSTGRES_DB:-newsfeed}"
+      CLIENT_ORIGIN: "http://localhost:5173"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  client:
+    build: ./client
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./client/src:/app/src
+      - ./client/public:/app/public
+      - ./client/index.html:/app/index.html
+    environment:
+      VITE_API_TARGET: "http://server:3001"
+    depends_on:
+      - server
+
+volumes:
+  pgdata:
