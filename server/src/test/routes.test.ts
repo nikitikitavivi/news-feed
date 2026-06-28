@@ -145,7 +145,7 @@ describe('GET /api/trending', () => {
     ]);
 
     const app = express();
-    app.get('/api/trending', async (req, res) => {
+    app.get('/api/trending', async (_req, res) => {
       const articles = await mockGetTopHeadlines({});
       res.json({ articles: articles.map((a: any) => ({
         url: a.url, title: a.title, source: a.source.name,
