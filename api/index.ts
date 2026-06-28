@@ -4,8 +4,8 @@ let migrated = false;
 async function init() {
   if (app) return app;
   const [server, migrate] = await Promise.all([
-    import('../server/src/index'),
-    import('../server/src/db/migrate'),
+    import('../server/src/index.js'),
+    import('../server/src/db/migrate.js'),
   ]);
   app = server.default;
   if (!migrated) {
