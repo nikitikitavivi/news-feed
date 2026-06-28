@@ -6,7 +6,7 @@ const envSchema = z.object({
   GNEWS_KEY: z.string().min(1, 'GNEWS_KEY is required'),
   OPENAI_KEY: z.string().min(1, 'OPENAI_KEY is required'),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
-  CLIENT_ORIGIN: z.string().min(1, 'CLIENT_ORIGIN is required'),
+  CLIENT_ORIGIN: z.string().optional(),
 });
 
 function loadEnv() {
@@ -27,7 +27,12 @@ function loadEnv() {
     process.exit(1);
   }
 
-  return result.data;
+  const clientOrigin =
+    result.data.CLIENT_ORIGIN ||
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined) ||
+    'http://localhost:5173';
+
+  return { ...result.data, CLIENT_ORIGIN: clientOrigin };
 }
 
 export const env = loadEnv();
