@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import type { SearchResult } from '../lib/api';
 import { searchArticles, analyzeArticle, fetchTrending, safeUrl } from '../lib/api';
 import { useT } from '../lib/i18n';
+import { sentimentEmoji, sentimentLabelKey } from '../lib/sentiment';
 import './SearchView.css';
 
 interface Props {
@@ -35,8 +36,11 @@ export function SearchView({ analyzedUrls, onAnalyzed, visible, lang, country }:
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [analyzedResults, setAnalyzedResults] = useState<Record<string, { summary: string; sentiment: string; rationale: string }>>({});
 
+  const searchGenRef = useRef(0);
+
   const doSearch = useCallback(
     async (q: string) => {
+      const gen = ++searchGenRef.current;
       setSearching(true);
       setError('');
       setArticles([]);
@@ -46,20 +50,25 @@ export function SearchView({ analyzedUrls, onAnalyzed, visible, lang, country }:
 
       try {
         const results = await searchArticles(q, lang || undefined, country || undefined);
+        if (gen !== searchGenRef.current) return;
         setArticles(results);
         if (results.length === 0) {
           setError(t('search.error.notFound'));
         }
       } catch {
+        if (gen !== searchGenRef.current) return;
         setError(t('search.error.failed'));
       } finally {
-        setSearching(false);
+        if (gen === searchGenRef.current) {
+          setSearching(false);
+        }
       }
     },
     [lang, country, t]
   );
 
   const doTrending = useCallback(async () => {
+    const gen = ++searchGenRef.current;
     setSearching(true);
     setError('');
     setArticles([]);
@@ -69,14 +78,18 @@ export function SearchView({ analyzedUrls, onAnalyzed, visible, lang, country }:
 
     try {
       const results = await fetchTrending(lang || undefined, country || undefined);
+      if (gen !== searchGenRef.current) return;
       setArticles(results);
       if (results.length === 0) {
         setError(t('search.error.notFound'));
       }
     } catch {
+      if (gen !== searchGenRef.current) return;
       setError(t('search.error.failed'));
     } finally {
-      setSearching(false);
+      if (gen === searchGenRef.current) {
+        setSearching(false);
+      }
     }
   }, [lang, country, t]);
 
@@ -152,22 +165,6 @@ export function SearchView({ analyzedUrls, onAnalyzed, visible, lang, country }:
     },
     [onAnalyzed, lang, country, t]
   );
-
-  const sentimentEmoji = (s: string) => {
-    switch (s) {
-      case 'positive': return '😍';
-      case 'negative': return '😢';
-      default: return '👀';
-    }
-  };
-
-  const sentimentLabelKey = (s: string) => {
-    switch (s) {
-      case 'positive': return 'history.positive';
-      case 'negative': return 'history.negative';
-      default: return 'history.neutral';
-    }
-  };
 
   const formatDate = (iso: string, locale: string = 'en') => {
     return new Date(iso).toLocaleDateString(locale, {

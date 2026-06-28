@@ -1,4 +1,4 @@
-import { createContext, useContext, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, type ReactNode } from 'react';
 
 export type SupportedLang = 'en' | 'ru' | 'es' | 'fr' | 'de' | 'zh' | 'ja' | 'ar';
 
@@ -36,8 +36,6 @@ const en = {
   'history.loading': 'Loading history...',
   'history.error': 'Failed to load history.',
   'history.empty': 'No analyses yet. Search and click "Analyze" to start.',
-  'history.delete': 'Delete',
-  'history.error.delete': 'Delete failed.',
   'history.original': 'Original article',
   'footer.gnews': 'News data via GNews API',
   'footer.ai': 'AI summaries via GPT-4.1 nano',
@@ -76,10 +74,8 @@ const ru = {
   'history.negative': '\u041f\u043b\u043e\u0445\u0438\u0435 \u043d\u043e\u0432\u043e\u0441\u0442\u0438',
   'history.loading': '\u0417\u0430\u0433\u0440\u0443\u0437\u043a\u0430 \u0438\u0441\u0442\u043e\u0440\u0438\u0438...',
   'history.error': '\u041e\u0448\u0438\u0431\u043a\u0430 \u0437\u0430\u0433\u0440\u0443\u0437\u043a\u0438.',
-  'history.error.delete': '\u041e\u0448\u0438\u0431\u043a\u0430 \u0443\u0434\u0430\u043b\u0435\u043d\u0438\u044f.',
   'history.empty': '\u041f\u043e\u043a\u0430 \u043d\u0435\u0442 \u0430\u043d\u0430\u043b\u0438\u0437\u043e\u0432. \u041d\u0430\u0436\u043c\u0438\u0442\u0435 "\u0410\u043d\u0430\u043b\u0438\u0437".',
   'history.original': '\u041e\u0440\u0438\u0433\u0438\u043d\u0430\u043b \u0441\u0442\u0430\u0442\u044c\u0438',
-  'history.delete': '\u0423\u0434\u0430\u043b\u0438\u0442\u044c',
 };
 
 const es = {
@@ -115,10 +111,8 @@ const es = {
   'history.negative': 'Negativo',
   'history.loading': 'Cargando historial...',
   'history.error': 'Error al cargar.',
-  'history.error.delete': 'Error al eliminar.',
   'history.empty': 'A\u00fan no hay an\u00e1lisis. Busca y haz clic en "Analizar".',
   'history.original': 'Art\u00edculo original',
-  'history.delete': 'Eliminar',
 };
 
 const fr = {
@@ -154,10 +148,8 @@ const fr = {
   'history.negative': 'N\u00e9gatif',
   'history.loading': `Chargement de l'historique...`,
   'history.error': '\u00c9chec du chargement.',
-  'history.error.delete': '\u00c9chec de la suppression.',
   'history.empty': `Pas encore d'analyses. Cliquez sur "Analyser".`,
   'history.original': 'Article original',
-  'history.delete': 'Supprimer',
 };
 
 const de = {
@@ -193,10 +185,8 @@ const de = {
   'history.negative': 'Negativ',
   'history.loading': 'Verlauf wird geladen...',
   'history.error': 'Fehler beim Laden.',
-  'history.error.delete': 'Fehler beim L\u00f6schen.',
   'history.empty': 'Noch keine Analysen. Klicken Sie auf "Analysieren".',
   'history.original': 'Originalartikel',
-  'history.delete': 'L\u00f6schen',
 };
 
 const zh = {
@@ -232,10 +222,8 @@ const zh = {
   'history.negative': '\u8d1f\u9762',
   'history.loading': '\u52a0\u8f7d\u5386\u53f2...',
   'history.error': '\u52a0\u8f7d\u5931\u8d25\u3002',
-  'history.error.delete': '\u5220\u9664\u5931\u8d25\u3002',
   'history.empty': '\u6682\u65e0\u5206\u6790\u3002\u641c\u7d22\u6587\u7ae0\u5e76\u70b9\u51fb\u201c\u5206\u6790\u201d\u5f00\u59cb\u3002',
   'history.original': '\u539f\u6587',
-  'history.delete': '\u5220\u9664',
 };
 
 const ja = {
@@ -271,10 +259,8 @@ const ja = {
   'history.negative': '\u30cd\u30ac\u30c6\u30a3\u30d6',
   'history.loading': '\u5c65\u6b74\u3092\u8aad\u307f\u8fbc\u307f\u4e2d...',
   'history.error': '\u8aad\u307f\u8fbc\u307f\u306b\u5931\u6557\u3057\u307e\u3057\u305f\u3002',
-  'history.error.delete': '\u524a\u9664\u306b\u5931\u6557\u3057\u307e\u3057\u305f\u3002',
   'history.empty': '\u307e\u3060\u5206\u6790\u304c\u3042\u308a\u307e\u305b\u3093\u3002\u8a18\u4e8b\u3092\u691c\u7d22\u3057\u3066\u300c\u5206\u6790\u300d\u3092\u30af\u30ea\u30c3\u30af\u3057\u3066\u304f\u3060\u3055\u3044\u3002',
   'history.original': '\u5143\u306e\u8a18\u4e8b',
-  'history.delete': '\u524a\u9664',
 };
 
 const ar = {
@@ -310,10 +296,8 @@ const ar = {
   'history.negative': '\u0633\u0644\u0628\u064a',
   'history.loading': '\u062c\u0627\u0631\u064a \u062a\u062d\u0645\u064a\u0644 \u0627\u0644\u0633\u062c\u0644...',
   'history.error': '\u0641\u0634\u0644 \u062a\u062d\u0645\u064a\u0644 \u0627\u0644\u0633\u062c\u0644.',
-  'history.error.delete': '\u0641\u0634\u0644 \u062d\u0630\u0641 \u0627\u0644\u062a\u062d\u0644\u064a\u0644.',
   'history.empty': '\u0644\u0627 \u062a\u0648\u062c\u062f \u062a\u062d\u0644\u064a\u0644\u0627\u062a \u0628\u0639\u062f. \u0627\u0628\u062d\u062b \u0639\u0646 \u0645\u0642\u0627\u0644\u0627\u062a \u0648\u0627\u0646\u0642\u0631 \u0639\u0644\u0649 "\u062a\u062d\u0644\u064a\u0644".',
   'history.original': '\u0627\u0644\u0645\u0642\u0627\u0644 \u0627\u0644\u0623\u0635\u0644\u064a',
-  'history.delete': '\u062d\u0630\u0641',
 };
 
 const packs = { en, ru, es, fr, de, zh, ja, ar } as Record<string, Record<string, string>>;
@@ -337,11 +321,14 @@ export function useLang(): SupportedLang {
 }
 
 export function LocaleProvider({ lang, children }: { lang: SupportedLang; children: ReactNode }) {
-  const pack: Record<string, string> = packs[lang] || en;
-  const t = (key: string): string => pack[key] || (en as Record<string, string>)[key] || key;
+  const value = useMemo(() => {
+    const pack: Record<string, string> = packs[lang] || en;
+    const t = (key: string): string => pack[key] || (en as Record<string, string>)[key] || key;
+    return { lang, t };
+  }, [lang]);
 
   return (
-    <LocaleContext.Provider value={{ lang, t }}>
+    <LocaleContext.Provider value={value}>
       {children}
     </LocaleContext.Provider>
   );

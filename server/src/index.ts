@@ -4,7 +4,6 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { env } from './config.js';
 import { errorHandler } from './lib/errors.js';
-import { ensureSchema } from './db/migrate.js';
 import searchRouter from './routes/search.js';
 import analysesRouter from './routes/analyses.js';
 
@@ -44,13 +43,6 @@ export { app };
 export default app;
 
 async function start() {
-  try {
-    await ensureSchema();
-  } catch (err) {
-    console.error('[server] Failed to ensure DB schema:', err);
-    process.exit(1);
-  }
-
   app.listen(env.PORT, () => {
     console.log(`[server] running on http://localhost:${env.PORT}`);
     console.log(`[server] CORS origin: ${env.CLIENT_ORIGIN}`);

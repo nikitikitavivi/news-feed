@@ -30,10 +30,15 @@ export function errorHandler(
   res: Response,
   _next: NextFunction
 ) {
-  console.error(`[ERROR] ${err.message}`);
+  console.error(`[ERROR] ${err.message}`, err.stack);
 
   if (err instanceof AppError) {
     res.status(err.status).json(errorResponse(err.code, err.message));
+    return;
+  }
+
+  if (err.name === 'OpenAIError' && 'status' in err && typeof err.status === 'number') {
+    res.status(err.status).json(errorResponse('OPENAI_ERROR', err.message));
     return;
   }
 

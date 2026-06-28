@@ -23,45 +23,7 @@ export interface AnalysisRow {
   createdAt: string;
 }
 
-export async function upsertArticle(input: {
-  url: string;
-  title: string;
-  source: string;
-  imageUrl: string | null;
-  publishedAt: string;
-  snippet: string | null;
-}): Promise<ArticleRow> {
-  const existing = await db
-    .select()
-    .from(articles)
-    .where(eq(articles.url, input.url))
-    .limit(1);
-
-  if (existing.length > 0) {
-    return {
-      id: existing[0].id,
-      url: existing[0].url,
-      title: existing[0].title,
-      source: existing[0].source,
-      imageUrl: existing[0].imageUrl,
-      publishedAt: existing[0].publishedAt.toISOString(),
-      snippet: existing[0].snippet,
-      createdAt: existing[0].createdAt.toISOString(),
-    };
-  }
-
-  const [row] = await db
-    .insert(articles)
-    .values({
-      url: input.url,
-      title: input.title,
-      source: input.source,
-      imageUrl: input.imageUrl,
-      publishedAt: new Date(input.publishedAt),
-      snippet: input.snippet,
-    })
-    .returning();
-
+function toArticleRow(row: typeof articles.$inferSelect): ArticleRow {
   return {
     id: row.id,
     url: row.url,
@@ -72,6 +34,38 @@ export async function upsertArticle(input: {
     snippet: row.snippet,
     createdAt: row.createdAt.toISOString(),
   };
+}
+
+export async function upsertArticle(input: {
+  url: string;
+  title: string;
+  source: string;
+  imageUrl: string | null;
+  publishedAt: string;
+  snippet: string | null;
+}): Promise<ArticleRow> {
+  const [inserted] = await db
+    .insert(articles)
+    .values({
+      url: input.url,
+      title: input.title,
+      source: input.source,
+      imageUrl: input.imageUrl,
+      publishedAt: new Date(input.publishedAt),
+      snippet: input.snippet,
+    })
+    .onConflictDoNothing()
+    .returning();
+
+  if (inserted) return toArticleRow(inserted);
+
+  const [existing] = await db
+    .select()
+    .from(articles)
+    .where(eq(articles.url, input.url))
+    .limit(1);
+
+  return toArticleRow(existing!);
 }
 
 export async function getAnalysisByArticleId(
@@ -85,14 +79,18 @@ export async function getAnalysisByArticleId(
 
   if (rows.length === 0) return null;
 
+  return toAnalysisRow(rows[0]);
+}
+
+function toAnalysisRow(row: typeof analyses.$inferSelect): AnalysisRow {
   return {
-    id: rows[0].id,
-    articleId: rows[0].articleId,
-    summary: rows[0].summary,
-    sentiment: rows[0].sentiment as 'positive' | 'neutral' | 'negative',
-    rationale: rows[0].rationale ?? '',
-    model: rows[0].model,
-    createdAt: rows[0].createdAt.toISOString(),
+    id: row.id,
+    articleId: row.articleId,
+    summary: row.summary,
+    sentiment: row.sentiment as 'positive' | 'neutral' | 'negative',
+    rationale: row.rationale ?? '',
+    model: row.model,
+    createdAt: row.createdAt.toISOString(),
   };
 }
 
@@ -104,8 +102,8 @@ export async function createAnalysis(
     rationale: string;
     model: string;
   }
-): Promise<AnalysisRow> {
-  const [row] = await db
+): Promise<{ analysis: AnalysisRow; created: boolean }> {
+  const [inserted] = await db
     .insert(analyses)
     .values({
       articleId: article.id,
@@ -114,17 +112,18 @@ export async function createAnalysis(
       rationale: data.rationale,
       model: data.model,
     })
+    .onConflictDoNothing({ target: analyses.articleId })
     .returning();
 
-  return {
-    id: row.id,
-    articleId: row.articleId,
-    summary: row.summary,
-    sentiment: row.sentiment as 'positive' | 'neutral' | 'negative',
-    rationale: row.rationale ?? '',
-    model: row.model,
-    createdAt: row.createdAt.toISOString(),
-  };
+  if (inserted) return { analysis: toAnalysisRow(inserted), created: true };
+
+  const [existing] = await db
+    .select()
+    .from(analyses)
+    .where(eq(analyses.articleId, article.id))
+    .limit(1);
+
+  return { analysis: toAnalysisRow(existing!), created: false };
 }
 
 export async function getAnalyses(filters: {
@@ -176,24 +175,18 @@ export async function getAnalyses(filters: {
     .limit(filters.limit)
     .offset(filters.offset);
 
-  const result = rows.map((r) => ({
-    id: r.id,
-    articleId: r.articleId,
-    summary: r.summary,
-    sentiment: r.sentiment as 'positive' | 'neutral' | 'negative',
-    rationale: r.rationale ?? '',
-    model: r.model,
-    createdAt: r.createdAt.toISOString(),
-    article: {
+  const result = rows.map((r: (typeof rows)[number]) => ({
+    ...toAnalysisRow(r),
+    article: toArticleRow({
       id: r.articleId2,
       url: r.articleUrl,
       title: r.articleTitle,
       source: r.articleSource,
       imageUrl: r.articleImageUrl,
-      publishedAt: r.articlePublishedAt.toISOString(),
+      publishedAt: r.articlePublishedAt,
       snippet: r.articleSnippet,
-      createdAt: r.articleCreatedAt.toISOString(),
-    },
+      createdAt: r.articleCreatedAt,
+    }),
   }));
 
   const countRows = await db
@@ -243,23 +236,17 @@ export async function getAnalysisById(
 
   const r = rows[0];
   return {
-    id: r.id,
-    articleId: r.articleId,
-    summary: r.summary,
-    sentiment: r.sentiment as 'positive' | 'neutral' | 'negative',
-    rationale: r.rationale ?? '',
-    model: r.model,
-    createdAt: r.createdAt.toISOString(),
-    article: {
+    ...toAnalysisRow(r),
+    article: toArticleRow({
       id: r.articleId2,
       url: r.articleUrl,
       title: r.articleTitle,
       source: r.articleSource,
       imageUrl: r.articleImageUrl,
-      publishedAt: r.articlePublishedAt.toISOString(),
+      publishedAt: r.articlePublishedAt,
       snippet: r.articleSnippet,
-      createdAt: r.articleCreatedAt.toISOString(),
-    },
+      createdAt: r.articleCreatedAt,
+    }),
   };
 }
 
@@ -272,14 +259,5 @@ export async function getArticle(id: number): Promise<ArticleRow | null> {
 
   if (rows.length === 0) return null;
 
-  return {
-    id: rows[0].id,
-    url: rows[0].url,
-    title: rows[0].title,
-    source: rows[0].source,
-    imageUrl: rows[0].imageUrl,
-    publishedAt: rows[0].publishedAt.toISOString(),
-    snippet: rows[0].snippet,
-    createdAt: rows[0].createdAt.toISOString(),
-  };
+  return toArticleRow(rows[0]);
 }

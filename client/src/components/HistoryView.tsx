@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import type { Analysis, AnalysesResponse } from '../lib/api';
 import { getAnalyses, safeUrl } from '../lib/api';
 import { useT } from '../lib/i18n';
+import { sentimentEmoji } from '../lib/sentiment';
 import './HistoryView.css';
 
 interface Props {
@@ -18,17 +19,23 @@ export function HistoryView({ refreshKey, visible }: Props) {
   const loadedRef = useRef(false);
   const prevRefreshKey = useRef(refreshKey);
   const prevFilter = useRef(filter);
+  const fetchGenRef = useRef(0);
 
   const fetchAnalyses = useCallback(async (currentFilter: string) => {
+    const gen = ++fetchGenRef.current;
     setLoading(true);
     setError('');
     try {
       const result = await getAnalyses(currentFilter === 'all' ? undefined : currentFilter);
+      if (gen !== fetchGenRef.current) return;
       setData(result);
     } catch {
+      if (gen !== fetchGenRef.current) return;
       setError(t('history.error'));
     } finally {
-      setLoading(false);
+      if (gen === fetchGenRef.current) {
+        setLoading(false);
+      }
     }
   }, [t]);
 
@@ -48,17 +55,6 @@ export function HistoryView({ refreshKey, visible }: Props) {
     { key: 'neutral', labelKey: 'history.neutral' },
     { key: 'negative', labelKey: 'history.negative' },
   ];
-
-  const sentimentEmoji = (s: string) => {
-    switch (s) {
-      case 'positive':
-        return '😍';
-      case 'negative':
-        return '😢';
-      default:
-        return '👀';
-    }
-  };
 
   const formatDate = (iso: string) => {
     return new Date(iso).toLocaleDateString(undefined, {

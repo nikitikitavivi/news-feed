@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, integer, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 
 export const articles = pgTable('articles', {
   id: serial('id').primaryKey(),
@@ -21,4 +21,6 @@ export const analyses = pgTable('analyses', {
   rationale: text('rationale'),
   model: text('model').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
+}, (table) => ({
+  articleIdIdx: uniqueIndex('idx_analyses_article_id').on(table.articleId),
+}));

@@ -1,20 +1,5 @@
 import { describe, it, expect } from 'vitest';
-
-function sentimentEmoji(s: string): string {
-  switch (s) {
-    case 'positive': return '😍';
-    case 'negative': return '😢';
-    default: return '👀';
-  }
-}
-
-function sentimentLabelKey(s: string): string {
-  switch (s) {
-    case 'positive': return 'history.positive';
-    case 'negative': return 'history.negative';
-    default: return 'history.neutral';
-  }
-}
+import { sentimentEmoji, sentimentLabelKey } from '../lib/sentiment';
 
 describe('sentiment helpers', () => {
   describe('sentimentEmoji', () => {

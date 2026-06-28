@@ -1,11 +1,10 @@
+import { fileURLToPath } from 'url';
 import { sql } from 'drizzle-orm';
 import { db } from './client.js';
 
 export async function ensureSchema(): Promise<void> {
   await db.execute(sql`
     DO $$
-    DECLARE
-      stale_type boolean;
     BEGIN
       IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'articles')
          AND NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'articles') THEN
@@ -48,4 +47,14 @@ export async function ensureSchema(): Promise<void> {
   `);
 
   console.log('[db] Schema ensured.');
+}
+
+const isEntryPoint = process.argv[1] === fileURLToPath(import.meta.url);
+if (isEntryPoint) {
+  ensureSchema()
+    .then(() => process.exit(0))
+    .catch((err) => {
+      console.error('[migrate] Migration failed:', err);
+      process.exit(1);
+    });
 }

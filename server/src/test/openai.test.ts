@@ -109,29 +109,7 @@ describe('analyzeArticle', () => {
 
     await expect(
       analyzeArticle({ title: 'Test', snippet: 'Test' })
-    ).rejects.toThrow('Invalid sentiment');
-  });
-
-  it('fills in defaults for missing summary/rationale', async () => {
-    mockCreate.mockResolvedValueOnce({
-      model: 'gpt-4.1-nano',
-      choices: [
-        {
-          message: {
-            content: JSON.stringify({
-              summary: '',
-              sentiment: 'neutral',
-              rationale: '',
-            }),
-          },
-        },
-      ],
-    });
-
-    const result = await analyzeArticle({ title: 'Test', snippet: 'Test' });
-
-    expect(result.summary).toBe('No summary available.');
-    expect(result.rationale).toBe('No rationale provided.');
+    ).rejects.toThrow('OpenAI response failed schema validation');
   });
 
   it('includes language instruction when lang is provided', async () => {

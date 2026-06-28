@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { z } from 'zod';
 import { env } from '../config.js';
 
 const openai = new OpenAI({
@@ -38,11 +39,27 @@ const SENTIMENT_SCHEMA = {
   },
 };
 
+const analysisResultSchema = z.object({
+  summary: z.string(),
+  sentiment: z.enum(['positive', 'neutral', 'negative']),
+  rationale: z.string(),
+});
+
 export interface AnalysisResult {
   summary: string;
   sentiment: 'positive' | 'neutral' | 'negative';
   rationale: string;
   model: string;
+}
+
+export class OpenAIError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = 'OpenAIError';
+    this.status = status;
+  }
 }
 
 export async function analyzeArticle(input: {
@@ -77,7 +94,7 @@ export async function analyzeArticle(input: {
   const instructions: string[] = [
     `Title: ${input.title}`,
     `Excerpt: ${excerpt}`,
-    `\nAnalyze the sentiment of this news article based on the available excerpt. Provide a summary, sentiment (positive/neutral/negative), and rationale.`,
+    '\nAnalyze the sentiment of this news article based on the available excerpt. Provide a summary, sentiment (positive/neutral/negative), and rationale.',
   ];
 
   if (input.lang && input.lang !== 'en' && langNames[input.lang]) {
@@ -107,28 +124,27 @@ export async function analyzeArticle(input: {
 
   const raw = completion.choices[0]?.message?.content;
   if (!raw) {
-    throw new Error('OpenAI returned an empty response.');
+    throw new OpenAIError(503, 'OpenAI returned an empty response.');
   }
 
-  let parsed: AnalysisResult;
-  try {
-    parsed = JSON.parse(raw) as AnalysisResult;
-  } catch {
-    const trimmed = raw.trim();
-    if (trimmed.length > 0 && !trimmed.startsWith('{')) {
-      throw new Error('OpenAI refused or returned non-JSON content.');
-    }
-    throw new Error('OpenAI returned unparseable JSON.');
-  }
+  const result = analysisResultSchema.safeParse(
+    (() => {
+      try {
+        return JSON.parse(raw);
+      } catch {
+        throw new OpenAIError(503, 'OpenAI returned unparseable JSON.');
+      }
+    })()
+  );
 
-  if (!['positive', 'neutral', 'negative'].includes(parsed.sentiment)) {
-    throw new Error(`Invalid sentiment from OpenAI: ${parsed.sentiment}`);
+  if (!result.success) {
+    throw new OpenAIError(503, 'OpenAI response failed schema validation.');
   }
 
   return {
-    summary: parsed.summary || 'No summary available.',
-    sentiment: parsed.sentiment,
-    rationale: parsed.rationale || 'No rationale provided.',
+    summary: result.data.summary,
+    sentiment: result.data.sentiment,
+    rationale: result.data.rationale,
     model: completion.model,
   };
 }

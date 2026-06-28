@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import type { AnalysisRow } from '../store.js';
 import {
   upsertArticle,
   getAnalysisByArticleId,
@@ -10,16 +9,8 @@ import {
 } from '../store.js';
 import { analyzeArticle } from '../services/openai.js';
 import { errorResponse, asyncHandler } from '../lib/errors.js';
-import { RequestCoalescer } from '../lib/coalesce.js';
 
 const router = Router();
-
-interface CoalescedResult {
-  status: 200 | 201;
-  analysis: AnalysisRow;
-}
-
-const analysisCoalescer = new RequestCoalescer<CoalescedResult>();
 
 const createAnalysisBody = z.object({
   url: z.string().url().refine(
@@ -47,39 +38,36 @@ router.post(
   asyncHandler(async (req, res) => {
     const body = createAnalysisBody.parse(req.body);
 
-    const result = await analysisCoalescer.run(body.url, async () => {
-      const article = await upsertArticle({
-        url: body.url,
-        title: body.title,
-        source: body.source,
-        publishedAt: body.publishedAt,
-        snippet: body.snippet ?? null,
-        imageUrl: body.imageUrl ?? null,
-      });
-
-      const existing = await getAnalysisByArticleId(article.id);
-      if (existing) {
-        return { status: 200 as const, analysis: existing };
-      }
-
-      const analysisResult = await analyzeArticle({
-        title: article.title,
-        snippet: article.snippet,
-        lang: body.lang ?? undefined,
-        country: body.country ?? undefined,
-      });
-
-      const analysis = await createAnalysis(article, {
-        summary: analysisResult.summary,
-        sentiment: analysisResult.sentiment,
-        rationale: analysisResult.rationale,
-        model: analysisResult.model,
-      });
-
-      return { status: 201 as const, analysis };
+    const article = await upsertArticle({
+      url: body.url,
+      title: body.title,
+      source: body.source,
+      publishedAt: body.publishedAt,
+      snippet: body.snippet ?? null,
+      imageUrl: body.imageUrl ?? null,
     });
 
-    res.status(result.status).json({ analysis: result.analysis });
+    const existing = await getAnalysisByArticleId(article.id);
+    if (existing) {
+      res.status(200).json({ analysis: existing });
+      return;
+    }
+
+    const analysisResult = await analyzeArticle({
+      title: article.title,
+      snippet: article.snippet,
+      lang: body.lang ?? undefined,
+      country: body.country ?? undefined,
+    });
+
+    const { analysis, created } = await createAnalysis(article, {
+      summary: analysisResult.summary,
+      sentiment: analysisResult.sentiment,
+      rationale: analysisResult.rationale,
+      model: analysisResult.model,
+    });
+
+    res.status(created ? 201 : 200).json({ analysis });
   })
 );
 

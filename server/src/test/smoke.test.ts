@@ -182,10 +182,13 @@ describe('Smoke test: full Express app in-process (no Docker, no real DB)', () =
         model: 'gpt-4.1-nano',
       });
       mockStore.createAnalysis.mockResolvedValueOnce({
-        id: 200, articleId: 100,
-        summary: 'A scientific breakthrough was reported.',
-        sentiment: 'positive', rationale: 'The article emphasizes discovery and progress.',
-        model: 'gpt-4.1-nano', createdAt: '2025-06-28T00:00:01Z',
+        analysis: {
+          id: 200, articleId: 100,
+          summary: 'A scientific breakthrough was reported.',
+          sentiment: 'positive', rationale: 'The article emphasizes discovery and progress.',
+          model: 'gpt-4.1-nano', createdAt: '2025-06-28T00:00:01Z',
+        },
+        created: true,
       });
 
       const res = await supertest(app)
@@ -263,10 +266,13 @@ describe('Smoke test: full Express app in-process (no Docker, no real DB)', () =
         model: 'gpt-4.1-nano',
       });
       mockStore.createAnalysis.mockResolvedValue({
-        id: 300, articleId: 200,
-        summary: 'Coalesced summary.',
-        sentiment: 'positive', rationale: 'Good.',
-        model: 'gpt-4.1-nano', createdAt: '2025-06-28T00:00:00Z',
+        analysis: {
+          id: 300, articleId: 200,
+          summary: 'Coalesced summary.',
+          sentiment: 'positive', rationale: 'Good.',
+          model: 'gpt-4.1-nano', createdAt: '2025-06-28T00:00:00Z',
+        },
+        created: true,
       });
 
       const payload = {
