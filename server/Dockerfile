@@ -11,4 +11,4 @@ COPY src/ ./src/
 
 EXPOSE 3001
 
-CMD ["npx", "tsx", "watch", "src/index.ts"]
+CMD sh -c "npx tsx src/db/migrate.ts && npx tsx watch src/index.ts"
